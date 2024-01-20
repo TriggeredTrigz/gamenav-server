@@ -7,5 +7,6 @@
                 "-Dappmap.output.directory=${command:appmap.getAppmapDir}"
             ]
         }
-    ]
+    ],
+    "editor.maxTokenizationLineLength": 20000000
 }

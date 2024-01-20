@@ -1,88 +1,71 @@
 package org.arcreasia.gamenav.steam;
 
-import org.arcreasia.gamenav.globalMethods.deepCopy;
+import org.arcreasia.gamenav.mysql.initSQL;
+import org.arcreasia.gamenav.globalMethods.plsWait;
 
-import java.util.regex.Pattern;
-import java.util.HashMap;
-import java.lang.reflect.Field;
+// for more direct approach to parsing from json file
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import java.io.File;
+import java.sql.ResultSet;
 
-import javax.json.Json;
-import javax.json.stream.JsonParser;
+// import java.util.Scanner;
 
-import java.io.Reader;
-import java.io.StringReader;
+public class parseJson implements Runnable {
 
-public class parseJson {
+    // static Scanner sc = new Scanner(System.in);
 
-    public void parseGame ( Class<?> gameMetaData, String cleanResponse, int appid) throws Exception {
-        
-        System.out.println(cleanResponse+"\n"); 
-        
-        // json data object creation
-        Reader json_data = new StringReader(cleanResponse); // character stream from json string
-        JsonParser parser = Json.createParser(json_data); // created parser
+    public static void parseSteamAppList ( File f_json ) throws Exception {
+        int i=0;
+        ObjectMapper objectMapper = new ObjectMapper();
+        System.out.println("/src/main/java/org/arcreasia/gamenav/steam/steamAppList.json");
+        JsonParser parser = objectMapper.getFactory().createParser( f_json );
+        while ( parser.nextToken() != JsonToken.START_ARRAY ) {}
+        while ( parser.nextToken() == JsonToken.START_OBJECT ) {
 
-        // Class<?> gameDetails = gameMetaData;
-        Field[] declaredVars = gameMetaData.getDeclaredFields(); // gets all declared variable in gameMetaData class
+            ObjectNode node = objectMapper.readTree(parser);
 
-        while (parser.hasNext()) {
-            JsonParser.Event event = parser.next();
-            switch(event){
-                case END_ARRAY, END_OBJECT, START_ARRAY, START_OBJECT, VALUE_TRUE, VALUE_FALSE, VALUE_NULL, VALUE_NUMBER, VALUE_STRING -> {}
-                case KEY_NAME -> {
-                    for ( Field i:declaredVars ) {
-                        if ( i.getName().equals(parser.getString()) ) {
-                            parser.next();
-                            try {
-                                i.set(gameMetaData, parser.getInt());
-                            } catch (Exception e) {
-                                try {
-                                    i.set(gameMetaData, parser.getString());
-                                } catch (Exception e1) { e.printStackTrace(); break; }
-                            }
-                        }
-                    }
+            System.out.println(node.get("appid"));
+            int appid = node.get("appid").asInt();
+            System.out.println(node.get("name"));
+            String name = node.get("name").asText();
+            
+            try {
+                ResultSet rs = initSQL.stmt.executeQuery("select * from steamapplist where appid = " + appid );
+                if ( !rs.isBeforeFirst() ) {
+                    System.out.println("insert ignore into steamAppList(appID,name) values (" + appid + ",\"" + name + "\")");
+                    initSQL.stmt.executeUpdate("insert ignore into steamAppList(appID,name) values (" + appid + ",\"" + name + "\")");
+                    System.out.println("Game cached.");
+                } else {
+                    System.out.println("Game already cached.");
                 }
-            }
+            } catch (Exception e) { e.printStackTrace(); }
+
+            i++;
+
+            if ( i == 10 ) { plsWait.plsWaitBro(2500); i=0; }
+
+        }
+        if ( parser.nextToken() != JsonToken.START_ARRAY ) {
+            throw new IllegalStateException("Expected an Array");
         }
     }
 
-    public <K,V>HashMap<String, String> parseTop100(String cleanResponse, HashMap<String,String> hm) {
-
-        Reader json_data = new StringReader(cleanResponse);
-        JsonParser parser = Json.createParser(json_data);
-        
-        final Pattern pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
-        
-        boolean detailsFound;
-        String gameID="",gameName="";
-        int rank=0;
-        breakPut:
-            while ( parser.hasNext() ) {
-                JsonParser.Event event = parser.next();
-                detailsFound = false;
-                switch (event) {
-                    case END_ARRAY, END_OBJECT, START_ARRAY, START_OBJECT, VALUE_TRUE, VALUE_FALSE, VALUE_NULL, VALUE_NUMBER, VALUE_STRING -> {}
-                    case KEY_NAME -> {
-                        if ( pattern.matcher( parser.getString() ).matches() ) { gameID = parser.getString(); }
-                        if ( parser.getString().equals("name") ) {
-                            parser.next();
-                            gameName = parser.getString();
-                            detailsFound = true; rank++;
-                        }
-                        else {
-                            continue breakPut;
-                        }
-                        if ( detailsFound ) {
-                            if ( rank<10 ) hm.put("00"+rank,gameID+":"+gameName);
-                            else if ( rank<100 ) hm.put("0"+rank,gameID+":"+gameName);
-                            else { hm.put("100",gameID+":"+gameName); break breakPut; }
-                        }
-                    }
-                }
-            }
-
-        return deepCopy.deepCopyHashMap(hm);
+    @Override
+    public void run() {
+        String s = new File("$FILE_PATH_TO_JSON").getAbsolutePath();
+        System.out.println(s);
+        File f = new File(s);
+        try { parseSteamAppList( f ); } catch (Exception e) { e.printStackTrace(); }
     }
     
 }
+
+class steamAppListLayout {
+    int appID;
+    String name;
+}
+
+// record steamAppListStructure (int appID, String name) {}

@@ -1,12 +1,16 @@
 package org.arcreasia.gamenav.globalMethods;
 
+import org.arcreasia.gamenav.steam.parseJson;
+
 public class plsWait {
 
-    private static final Object lock = new Object();
+    static parseJson parseJson = new parseJson();
 
     public static void plsWaitBro(int n){
 
-        try{lock.wait(n);}catch(Exception e){e.printStackTrace();}
+        synchronized(parseJson) { 
+            try { parseJson.wait(n); } catch (Exception e) { e.printStackTrace(); }
+        }
 
     }
 
