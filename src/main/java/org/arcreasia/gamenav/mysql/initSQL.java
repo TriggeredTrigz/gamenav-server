@@ -1,8 +1,17 @@
 package org.arcreasia.gamenav.mysql;
 
+import org.arcreasia.gamenav.globalMethods.clearScreen;
+
+import java.util.Scanner;
 import java.sql.*;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 public class initSQL {
+
+    public static Dotenv env = Dotenv.configure().load();
+
+    final static Scanner sc = new Scanner(System.in);
 
     static Connection con = null;
     public static Statement stmt = null;
@@ -10,8 +19,8 @@ public class initSQL {
 
     public static void connectSQL() {
         try {
-            // Class.forName("com.mysql.jdbc.Driver");
-            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/","root","$PASSWORD");
+            clearScreen.cls();
+            con = DriverManager.getConnection(env.get("SERVER_URL"),env.get("SERVER_USER"),env.get("SERVER_PW"));
             stmt = con.createStatement();
         } catch (Exception e) {
             e.printStackTrace();

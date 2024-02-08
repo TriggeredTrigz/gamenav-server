@@ -11,11 +11,11 @@ import com.fasterxml.jackson.core.JsonToken;
 import java.io.File;
 import java.sql.ResultSet;
 
-// import java.util.Scanner;
+import java.util.Scanner;
 
 public class parseJson implements Runnable {
 
-    // static Scanner sc = new Scanner(System.in);
+    final static Scanner sc = new Scanner(System.in);
 
     public static void parseSteamAppList ( File f_json ) throws Exception {
         int i=0;
@@ -55,9 +55,7 @@ public class parseJson implements Runnable {
 
     @Override
     public void run() {
-        String s = new File("$FILE_PATH_TO_JSON").getAbsolutePath();
-        System.out.println(s);
-        File f = new File(s);
+        File f = new File(initSQL.env.get("steamJsonPath"));
         try { parseSteamAppList( f ); } catch (Exception e) { e.printStackTrace(); }
     }
     
@@ -67,5 +65,3 @@ class steamAppListLayout {
     int appID;
     String name;
 }
-
-// record steamAppListStructure (int appID, String name) {}

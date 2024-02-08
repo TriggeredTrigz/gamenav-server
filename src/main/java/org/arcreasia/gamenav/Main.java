@@ -2,6 +2,7 @@ package org.arcreasia.gamenav;
 
 import org.arcreasia.gamenav.mysql.initSQL;
 import org.arcreasia.gamenav.steam.parseJson;
+import org.arcreasia.gamenav.globalMethods.clearScreen;
 
 public class Main {
 
@@ -10,6 +11,8 @@ public class Main {
     static parseJson parseJson = new parseJson();
     
     public static void main(String[] args) {
+
+        clearScreen.cls();
 
         org.arcreasia.gamenav.mysql.initSQL.connectSQL();
         initSQL.createDB();
@@ -21,3 +24,4 @@ public class Main {
 
     }
 }
+
