@@ -19,7 +19,7 @@ public class initSQL {
 
     public static void connectSQL() {
         try {
-            clearScreen.cls();
+            // clearScreen.cls();
             con = DriverManager.getConnection(env.get("SERVER_URL"),env.get("SERVER_USER"),env.get("SERVER_PW"));
             stmt = con.createStatement();
         } catch (Exception e) {
@@ -50,7 +50,7 @@ public class initSQL {
                 System.out.println("userDetails table created.");
                 stmt.executeUpdate("create table steamSpyGameDetails(appID int not null unique, name varchar(255), developers varchar(255), publishers varchar(255), positive int, negative int, owners varchar(40), price varchar(10), initialPrice varchar(10), discount varchar(5), ccu int, languages varchar(1000),genres varchar(1000), tags varchar(1000), PRIMARY KEY (appID));");
                 System.out.println("steamSpyGameDetails table created.");
-                stmt.executeUpdate("create table steamAppList(appID int not null unique, name varchar(255));");
+                stmt.executeUpdate("create table steamAppList(appID int not null unique, name varchar(255), banner varchar(255));");
                 System.out.println("steamAppList table created.");
             }
         } catch (Exception e) {
