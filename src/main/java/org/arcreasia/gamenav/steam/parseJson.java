@@ -1,8 +1,18 @@
+/*
+
+ * Purpose of file:
+ * 
+ *      parse json files as necessary for database
+ * 
+ */
+
 package org.arcreasia.gamenav.steam;
 
 import org.arcreasia.gamenav.mysql.initSQL;
 import org.arcreasia.gamenav.globalMethods.plsWait;
 import org.arcreasia.gamenav.globalMethods.uptime;
+
+import org.arcreasia.gamenav.steam.callAPI;
 
 // for more direct approach to parsing from json file
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,12 +21,89 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import java.io.File;
 import java.sql.ResultSet;
-
+import java.util.Arrays;
 import java.util.Scanner;
 
-public class parseJson implements Runnable {
+public class parseJSON implements Runnable {
 
     final static Scanner sc = new Scanner(System.in);
+
+    static StringBuffer url;
+    static StringBuffer gameDetails = new StringBuffer("");
+
+    static ObjectMapper objectMapper = new ObjectMapper();
+
+    public static void parseSteamListWCheck ( File f_json ) throws Exception {
+
+        JsonParser listParser = objectMapper.getFactory().createParser( f_json );
+        while ( listParser.nextToken() != JsonToken.START_ARRAY ) {}
+        while ( listParser.nextToken() == JsonToken.START_OBJECT ) {
+            ObjectNode listNode = objectMapper.readTree(listParser);
+            int appid = listNode.get("appid").asInt();
+            
+            try {
+                ResultSet rs = initSQL.stmt.executeQuery("select * from dbnav.steamlist where appid = " + appid );
+                gameDetails.setLength(0);
+                if ( !rs.isBeforeFirst() ) {
+                    try {
+                        gameDetails.append( callAPI.apiGetResponse( "https://store.steampowered.com/api/appdetails?appids=" + appid ) );
+                    } catch (Exception e) { e.printStackTrace(); }
+                    
+                    JsonParser gameParser = objectMapper.getFactory().createParser( gameDetails.toString() );
+                    ObjectNode gameNode = null;
+                    if ( gameParser.nextToken() == JsonToken.START_OBJECT ) {
+                        gameNode = objectMapper.readTree(gameParser);
+                    }
+                    gameParser = objectMapper.getFactory().createParser( gameNode.get(String.valueOf(appid)).toString() );
+                    gameNode = objectMapper.readTree(gameParser);
+                    if ( gameNode.get("success").asText().equals("false") ) { 
+                        initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,type) values(" + appid + ",\"invalid\");");
+                        System.out.println("Appid:" + appid + "\tname:" + listNode.get("name").asText() + "\t\t\tnot valid.");
+                        plsWait.plsWaitBro(5000);
+                        continue; 
+                    }
+                    else { 
+                        // System.out.println(gameNode.get("data"));
+                        gameParser = objectMapper.getFactory().createParser( gameNode.get("data").toString() );
+                        gameNode = objectMapper.readTree(gameParser);
+                    }
+
+                    String name = listNode.get("name").asText();
+                    StringBuffer name_buffer = new StringBuffer("");
+                    for ( int j = 0; j < name.length(); j++){
+                        char c = name.charAt(j);
+                        if ( c == '"' ) name_buffer.append("\"");
+                        name_buffer.append( String.valueOf( c ) );
+                    }
+                    name = name_buffer.toString();
+
+                    String type;
+                    switch ( gameNode.get("type").asText() ) {
+                        case "game" -> { type = "game"; }
+                        case "demo" -> { type = "demo"; }
+                        case "dlc" -> { type = "dlc"; }
+                        default -> { type = "app"; }
+                    }
+                    initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,name,type) values(" + appid + ",\"" + name + "\",\"" + type + "\");");
+                    System.out.println("Appid:" + appid + "\t name:" + name + "\t\t\tcached " + type);
+                    plsWait.plsWaitBro(5000);
+                }
+                else {
+                    System.out.println("Appid:" + appid + "\t name:" + listNode.get("name").asText() + "\t\t\talready cached.");
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+    }
+
+    // private static ObjectNode jsonIndexer ( JsonParser parser ) throws Exception {
+    //     if ( parser.nextToken() != JsonToken.START_ARRAY ) {}
+    //     if ( parser.nextToken() == JsonToken.START_OBJECT ) {
+    //         ObjectNode node = objectMapper.readTree(parser);
+
+    //         return node;
+    //     }
+    //     return null;
+    // }
 
     public static void parseSteamAppList ( File f_json ) throws Exception {
         int i=0;
@@ -63,11 +150,27 @@ public class parseJson implements Runnable {
         }
     }
 
+    public StringBuffer parseGameDetails ( int appid ) {
+
+        url.append("https://store.steampowered.com/api/appdetails?appids=" + appid);
+
+        try {
+            gameDetails.append( callAPI.apiGetResponse( url.toString() ) );
+        } catch (Exception e) { e.printStackTrace(); }
+
+        url.setLength(0);
+        return gameDetails;
+
+    }
+
     @Override
     public void run() {
         uptime.initTimer();
         File f = new File(initSQL.env.get("steamJsonPath"));
-        try { parseSteamAppList( f ); } catch (Exception e) { e.printStackTrace(); }
+        // try { parseSteamAppList( f ); } catch (Exception e) { e.printStackTrace(); }
+        try {
+            parseSteamListWCheck( f ); 
+        } catch (Exception e) { e.printStackTrace(); }
     }
     
 }

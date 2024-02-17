@@ -1,10 +1,10 @@
 package org.arcreasia.gamenav.globalMethods;
 
-import org.arcreasia.gamenav.steam.parseJson;
+import org.arcreasia.gamenav.steam.parseJSON;
 
 public class plsWait {
 
-    static parseJson parseJson = new parseJson();
+    static parseJSON parseJson = new parseJSON();
 
     public static void plsWaitBro(int n){
 
