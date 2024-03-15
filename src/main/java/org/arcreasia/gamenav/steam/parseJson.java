@@ -9,10 +9,9 @@
 package org.arcreasia.gamenav.steam;
 
 import org.arcreasia.gamenav.mysql.initSQL;
+import org.arcreasia.gamenav.globalMethods.logger;
 import org.arcreasia.gamenav.globalMethods.plsWait;
 import org.arcreasia.gamenav.globalMethods.uptime;
-
-import org.arcreasia.gamenav.steam.callAPI;
 
 // for more direct approach to parsing from json file
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,7 +20,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import java.io.File;
 import java.sql.ResultSet;
-import java.util.Arrays;
 import java.util.Scanner;
 
 public class parseJSON implements Runnable {
@@ -42,30 +40,34 @@ public class parseJSON implements Runnable {
             int appid = listNode.get("appid").asInt();
             
             try {
-                ResultSet rs = initSQL.stmt.executeQuery("select * from dbnav.steamlist where appid = " + appid );
+                // ResultSet rs = initSQL.stmt.executeQuery("select * from dbnav.steamlist where appid = " + appid );
                 gameDetails.setLength(0);
-                if ( !rs.isBeforeFirst() ) {
+                // if ( !rs.isBeforeFirst() ) {
                     try {
                         gameDetails.append( callAPI.apiGetResponse( "https://store.steampowered.com/api/appdetails?appids=" + appid ) );
-                    } catch (Exception e) { e.printStackTrace(); }
+                    } catch (Exception e) { 
+                        // e.printStackTrace(); 
+                        logger.logGameCache.info(e.toString());
+                    }
                     
                     JsonParser gameParser = objectMapper.getFactory().createParser( gameDetails.toString() );
-                    ObjectNode gameNode = null;
+                    ObjectNode gameNode = null,dataNode = null;
                     if ( gameParser.nextToken() == JsonToken.START_OBJECT ) {
                         gameNode = objectMapper.readTree(gameParser);
                     }
                     gameParser = objectMapper.getFactory().createParser( gameNode.get(String.valueOf(appid)).toString() );
                     gameNode = objectMapper.readTree(gameParser);
                     if ( gameNode.get("success").asText().equals("false") ) { 
-                        initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,type) values(" + appid + ",\"invalid\");");
-                        System.out.println("Appid:" + appid + "\tname:" + listNode.get("name").asText() + "\t\t\tnot valid.");
+                        if( 0 != initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,type) values(" + appid + ",\"invalid\");") )
+                        logger.logGameCache.info("Appid:" + appid + "\tname:" + listNode.get("name").asText() + "\t\t\tnot valid.");
+                        // System.out.println("Appid:" + appid + "\tname:" + listNode.get("name").asText() + "\t\t\tnot valid.");
                         plsWait.plsWaitBro(5000);
                         continue; 
                     }
                     else { 
                         // System.out.println(gameNode.get("data"));
-                        gameParser = objectMapper.getFactory().createParser( gameNode.get("data").toString() );
-                        gameNode = objectMapper.readTree(gameParser);
+                        JsonParser dataParser = objectMapper.getFactory().createParser( gameNode.get("data").toString() );
+                        dataNode = objectMapper.readTree(dataParser);
                     }
 
                     String name = listNode.get("name").asText();
@@ -78,20 +80,25 @@ public class parseJSON implements Runnable {
                     name = name_buffer.toString();
 
                     String type;
-                    switch ( gameNode.get("type").asText() ) {
+                    switch ( dataNode.get("type").asText() ) {
                         case "game" -> { type = "game"; }
                         case "demo" -> { type = "demo"; }
                         case "dlc" -> { type = "dlc"; }
                         default -> { type = "app"; }
                     }
-                    initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,name,type) values(" + appid + ",\"" + name + "\",\"" + type + "\");");
-                    System.out.println("Appid:" + appid + "\t name:" + name + "\t\t\tcached " + type);
+                    if( 0 != initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,name,type) values(" + appid + ",\"" + name + "\",\"" + type + "\");") )
+                    // initSQL.stmt.executeUpdate("insert into dbnav.");
+                    // System.out.println("Appid:" + appid + "\t name:" + name + "\t\t\tcached " + type);
+                    logger.logGameCache.info("Appid:" + appid + "\t name:" + name + "\t\t\tcached " + type);
                     plsWait.plsWaitBro(5000);
-                }
-                else {
-                    System.out.println("Appid:" + appid + "\t name:" + listNode.get("name").asText() + "\t\t\talready cached.");
-                }
-            } catch (Exception e) { e.printStackTrace(); }
+                // }
+                // else {
+                //     System.out.println("Appid:" + appid + "\t name:" + listNode.get("name").asText() + "\t\t\talready cached.");
+                // }
+            } catch (Exception e) { 
+                // e.printStackTrace(); 
+                logger.logGameCache.info(e.toString());
+            }
         }
     }
 
@@ -167,10 +174,13 @@ public class parseJSON implements Runnable {
     public void run() {
         uptime.initTimer();
         File f = new File(initSQL.env.get("steamJsonPath"));
-        // try { parseSteamAppList( f ); } catch (Exception e) { e.printStackTrace(); }
         try {
+            logger.logApp.info("Initialiizing steam app list caching.");
             parseSteamListWCheck( f ); 
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) { 
+            // e.printStackTrace(); 
+            logger.logGameCache.info(e.toString());
+        }
     }
     
 }
