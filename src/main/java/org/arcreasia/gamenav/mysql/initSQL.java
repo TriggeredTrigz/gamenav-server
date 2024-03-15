@@ -1,6 +1,5 @@
 package org.arcreasia.gamenav.mysql;
 
-import org.arcreasia.gamenav.globalMethods.clearScreen;
 import org.arcreasia.gamenav.globalMethods.logger;
 
 import java.util.Scanner;
@@ -20,7 +19,6 @@ public class initSQL {
 
     public static void connectSQL() {
         try {
-            // clearScreen.cls();
             logger.logApp.info("Establishing MySQL connection...");
             con = DriverManager.getConnection(env.get("SERVER_URL"),env.get("SERVER_USER"),env.get("SERVER_PW"));
             logger.logApp.info("Established MySQL connection.");

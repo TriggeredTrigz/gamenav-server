@@ -40,77 +40,58 @@ public class parseJSON implements Runnable {
             int appid = listNode.get("appid").asInt();
             
             try {
-                // ResultSet rs = initSQL.stmt.executeQuery("select * from dbnav.steamlist where appid = " + appid );
                 gameDetails.setLength(0);
-                // if ( !rs.isBeforeFirst() ) {
-                    try {
-                        gameDetails.append( callAPI.apiGetResponse( "https://store.steampowered.com/api/appdetails?appids=" + appid ) );
-                    } catch (Exception e) { 
-                        // e.printStackTrace(); 
-                        logger.logGameCache.info(e.toString());
-                    }
+                try {
+                    gameDetails.append( callAPI.apiGetResponse( "https://store.steampowered.com/api/appdetails?appids=" + appid ) );
+                } catch (Exception e) { 
+                    // e.printStackTrace(); 
+                    logger.logGameCache.info(e.toString());
+                }
                     
-                    JsonParser gameParser = objectMapper.getFactory().createParser( gameDetails.toString() );
-                    ObjectNode gameNode = null,dataNode = null;
-                    if ( gameParser.nextToken() == JsonToken.START_OBJECT ) {
-                        gameNode = objectMapper.readTree(gameParser);
-                    }
-                    gameParser = objectMapper.getFactory().createParser( gameNode.get(String.valueOf(appid)).toString() );
+                JsonParser gameParser = objectMapper.getFactory().createParser( gameDetails.toString() );
+                ObjectNode gameNode = null,dataNode = null;
+                if ( gameParser.nextToken() == JsonToken.START_OBJECT ) {
                     gameNode = objectMapper.readTree(gameParser);
-                    if ( gameNode.get("success").asText().equals("false") ) { 
-                        if( 0 != initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,type) values(" + appid + ",\"invalid\");") )
-                        logger.logGameCache.info("Appid:" + appid + "\tname:" + listNode.get("name").asText() + "\t\t\tnot valid.");
-                        // System.out.println("Appid:" + appid + "\tname:" + listNode.get("name").asText() + "\t\t\tnot valid.");
-                        plsWait.plsWaitBro(5000);
-                        continue; 
-                    }
-                    else { 
-                        // System.out.println(gameNode.get("data"));
-                        JsonParser dataParser = objectMapper.getFactory().createParser( gameNode.get("data").toString() );
-                        dataNode = objectMapper.readTree(dataParser);
-                    }
-
-                    String name = listNode.get("name").asText();
-                    StringBuffer name_buffer = new StringBuffer("");
-                    for ( int j = 0; j < name.length(); j++){
-                        char c = name.charAt(j);
-                        if ( c == '"' ) name_buffer.append("\"");
-                        name_buffer.append( String.valueOf( c ) );
-                    }
-                    name = name_buffer.toString();
-
-                    String type;
-                    switch ( dataNode.get("type").asText() ) {
-                        case "game" -> { type = "game"; }
-                        case "demo" -> { type = "demo"; }
-                        case "dlc" -> { type = "dlc"; }
-                        default -> { type = "app"; }
-                    }
-                    if( 0 != initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,name,type) values(" + appid + ",\"" + name + "\",\"" + type + "\");") )
-                    // initSQL.stmt.executeUpdate("insert into dbnav.");
-                    // System.out.println("Appid:" + appid + "\t name:" + name + "\t\t\tcached " + type);
-                    logger.logGameCache.info("Appid:" + appid + "\t name:" + name + "\t\t\tcached " + type);
+                }
+                gameParser = objectMapper.getFactory().createParser( gameNode.get(String.valueOf(appid)).toString() );
+                gameNode = objectMapper.readTree(gameParser);
+                if ( gameNode.get("success").asText().equals("false") ) { 
+                    if( 0 != initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,type) values(" + appid + ",\"invalid\");") )
+                    logger.logGameCache.info("Appid:" + appid + "\tname:" + listNode.get("name").asText() + "\t\t\tnot valid.");
                     plsWait.plsWaitBro(5000);
-                // }
-                // else {
-                //     System.out.println("Appid:" + appid + "\t name:" + listNode.get("name").asText() + "\t\t\talready cached.");
-                // }
+                    continue; 
+                }
+                else { 
+                    JsonParser dataParser = objectMapper.getFactory().createParser( gameNode.get("data").toString() );
+                    dataNode = objectMapper.readTree(dataParser);
+                }
+
+                String name = listNode.get("name").asText();
+                StringBuffer name_buffer = new StringBuffer("");
+                for ( int j = 0; j < name.length(); j++){
+                    char c = name.charAt(j);
+                    if ( c == '"' ) name_buffer.append("\"");
+                    name_buffer.append( String.valueOf( c ) );
+                }
+                name = name_buffer.toString();
+
+                String type;
+                switch ( dataNode.get("type").asText() ) {
+                    case "game" -> { type = "game"; }
+                    case "demo" -> { type = "demo"; }
+                    case "dlc" -> { type = "dlc"; }
+                    default -> { type = "app"; }
+                }
+                if( 0 != initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,name,type) values(" + appid + ",\"" + name + "\",\"" + type + "\");") )
+                logger.logGameCache.info("Appid:" + appid + "\t name:" + name + "\t\t\tcached " + type);
+                plsWait.plsWaitBro(5000);
+            } catch (java.sql.SQLIntegrityConstraintViolationException e) {
+                logger.logGameCache.info("Appid:" + appid + "\t name:" + listNode.get("name").asText() + "\t\t\talready cached.");
             } catch (Exception e) { 
-                // e.printStackTrace(); 
                 logger.logGameCache.info(e.toString());
-            }
+            } 
         }
     }
-
-    // private static ObjectNode jsonIndexer ( JsonParser parser ) throws Exception {
-    //     if ( parser.nextToken() != JsonToken.START_ARRAY ) {}
-    //     if ( parser.nextToken() == JsonToken.START_OBJECT ) {
-    //         ObjectNode node = objectMapper.readTree(parser);
-
-    //         return node;
-    //     }
-    //     return null;
-    // }
 
     public static void parseSteamAppList ( File f_json ) throws Exception {
         int i=0;
