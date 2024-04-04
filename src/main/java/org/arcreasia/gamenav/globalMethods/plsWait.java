@@ -6,10 +6,10 @@ public class plsWait {
 
     static parseJSON parseJson = new parseJSON();
 
-    public static void plsWaitBro(int n){
+    public static void plsWaitBro(int Millis){
 
         synchronized(parseJson) { 
-            try { parseJson.wait(n); } catch (Exception e) { e.printStackTrace(); }
+            try { parseJson.wait(Millis); } catch (Exception e) { e.printStackTrace(); }
         }
 
     }
