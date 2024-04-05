@@ -170,7 +170,10 @@ public class parseJSON implements Runnable {
         uptime.initTimer();
         // File f = new File(initSQL.env.get("steamJsonPath"));
         try {
+            logger.logApp.info("Initialiizing steam app list caching method.");
+            logger.logApp.info("Getting AppList json from Steam API: https://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json");
             String json = new String(callAPI.apiGetResponse("https://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json"));
+            logger.logApp.info("Json data received.");
             logger.logApp.info("Initialiizing steam app list caching.");
             parseSteamListWCheck( json ); 
         } catch (Exception e) { 
