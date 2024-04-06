@@ -8,7 +8,8 @@ public class logger {
 
     public static Logger logApp = Logger.getLogger("Application Log");
     public static Logger logGameCache = Logger.getLogger("Game Cache Log");
-    private static FileHandler fh, fh_gc;
+    public static Logger logHTTPreq = Logger.getLogger("HTTP Log");
+    private static FileHandler fh_app, fh_gc, fh_http;
 
     public static void enableView_GameCaching(boolean view){
         logGameCache.setUseParentHandlers(view);
@@ -16,13 +17,28 @@ public class logger {
 
     public static void initLogger() {
         try {
-            logApp.setUseParentHandlers(false); logGameCache.setUseParentHandlers(false);
-            logApp.info("Attempting log files creation...");
-            fh = new FileHandler("resources/cache/application.log", true);
+
+            // app logs
+            logApp.setUseParentHandlers(false); 
+            fh_app = new FileHandler("resources/cache/application.log", true);
+            logApp.addHandler(fh_app); 
+            
+            // game caching logs
+            logGameCache.setUseParentHandlers(false);
             fh_gc = new FileHandler("resources/cache/gameCache.log", true);
-            logApp.addHandler(fh); logGameCache.addHandler(fh_gc);
+            logGameCache.addHandler(fh_gc);
+            
+            // http requests logs
+            logHTTPreq.setUseParentHandlers(false);
+            fh_http = new FileHandler("resources/cache/httpRequests.log");
+            logHTTPreq.addHandler(fh_http);
+            
+            // log formatting
             SimpleFormatter formatter = new SimpleFormatter();
-            fh.setFormatter(formatter); fh_gc.setFormatter(formatter);
+                fh_app.setFormatter(formatter); 
+                fh_gc.setFormatter(formatter);
+                fh_http.setFormatter(formatter);
+
         } catch (Exception e) { 
             logApp.info("Errored. Check logs."); 
             logApp.info( e.toString() );
