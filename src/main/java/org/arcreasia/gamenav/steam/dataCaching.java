@@ -19,14 +19,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import java.sql.ResultSet;
+
 import java.util.Scanner;
 
-class steamAppListLayout {
-    int appID;
-    String name;
-}
-
-public class parseJSON implements Runnable {
+public class dataCaching implements Runnable {
 
     final static Scanner sc = new Scanner(System.in);
 
@@ -50,7 +46,7 @@ public class parseJSON implements Runnable {
                 gameDetails.setLength(0);
                 try {
                     gameDetails.append( callAPI.apiGetResponse( "https://store.steampowered.com/api/appdetails?appids=" + appid ) );
-                    if( gameDetails.substring(0, 5).equals("Error") ) {
+                    if( gameDetails.substring(0, 3).equals("Err") ) {
                         logger.logGameCache.info("Connection failed. HTTP Response:" + gameDetails.substring(6, gameDetails.length()));
                     }
                 } catch (Exception e) { 
@@ -69,7 +65,7 @@ public class parseJSON implements Runnable {
                     // if( 0 != initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,type) values(" + appid + ",\"invalid\");") )
                     if( 0!= initSQL.stmt.executeUpdate("update dbnav.steamlist set type=\"invalid\" where appid="+ appid) )
                     logger.logGameCache.info("Appid:" + appid + "\tname:" + listNode.get("name").asText() + "\t\t\tnot valid.");
-                    plsWait.plsWaitBro(5000);
+                    plsWait.plsWaitBro(dataCaching.class,5000);
                     continue;
                 }
                 else { 
@@ -96,10 +92,10 @@ public class parseJSON implements Runnable {
                 // if( 0 != initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,name,type) values(" + appid + ",\"" + name + "\",\"" + type + "\");") )
                 if( 0!= initSQL.stmt.executeUpdate("update dbnav.steamlist set name=\"" + name + "\",type=\"" + type + "\" where appid="+ appid +";") )
                 logger.logGameCache.info("Appid:" + appid + "\t name:" + name + "\t\t\tcached " + type);
-                plsWait.plsWaitBro(5000);
+                plsWait.plsWaitBro(dataCaching.class,5000);
             } catch (java.sql.SQLIntegrityConstraintViolationException e) {
                 logger.logGameCache.info("Appid:" + appid + "\t name:" + listNode.get("name").asText() + "\t\t\talready cached.");
-                plsWait.plsWaitBro(500);
+                plsWait.plsWaitBro(dataCaching.class,125);
             } catch (Exception e) { 
                 logger.logGameCache.info(e.toString());
             } 
@@ -139,7 +135,7 @@ public class parseJSON implements Runnable {
 
             i++;
 
-            if( i == 30 ) { plsWait.plsWaitBro(2500); i=0; }
+            if( i == 30 ) { plsWait.plsWaitBro(dataCaching.class,2500); i=0; }
 
         }
         if( parser.nextToken() != JsonToken.START_ARRAY ) {
@@ -165,7 +161,7 @@ public class parseJSON implements Runnable {
             logger.logApp.info("Initialiizing steam app list caching method.");
             logger.logApp.info("Getting AppList json from Steam API: https://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json");
             String json = new String(callAPI.apiGetResponse("https://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json"));
-            if( json.substring(0, 5).equals("Error") ) {
+            if( json.substring(0, 3).equals("Err") ) {
                 logger.logGameCache.info("Connection to https://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json failed. HTTP Response:" + json.substring(6, json.length()));
                 Thread.interrupted();
             }

@@ -30,7 +30,7 @@ public class logger {
             
             // http requests logs
             logHTTPreq.setUseParentHandlers(false);
-            fh_http = new FileHandler("resources/cache/httpRequests.log");
+            fh_http = new FileHandler("resources/cache/httpRequests.log", true);
             logHTTPreq.addHandler(fh_http);
             
             // log formatting

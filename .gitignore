@@ -7,7 +7,7 @@
 *.zip
 *.tgz
 *.log
-# *.log.*
+*.log.*
 *.sig
 
 pkg/

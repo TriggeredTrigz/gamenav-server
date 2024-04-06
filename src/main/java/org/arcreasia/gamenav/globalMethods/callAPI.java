@@ -16,7 +16,7 @@ import java.net.URI;
 import java.net.URL;
 import javax.net.ssl.HttpsURLConnection;
 
-import org.arcreasia.gamenav.steam.parseJSON;
+import org.arcreasia.gamenav.steam.dataCaching;
 
 public class callAPI {
 
@@ -30,7 +30,7 @@ public class callAPI {
      * 
      */
 
-    parseJSON parseJson = new parseJSON();
+    dataCaching parseJson = new dataCaching();
 
     public static String apiGetResponse( String requestedURL ) throws Exception {
     
@@ -51,7 +51,9 @@ public class callAPI {
             // some stuff to get the json data response
             BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()),responseCode);
             StringBuffer jsonResponse = new StringBuffer();
-            while( in.readLine() != null ) jsonResponse.append(in.readLine());
+            // while( in.readLine() != null ) jsonResponse.append(in.readLine());
+            String s;
+            while( ( s = in.readLine() ) != null) jsonResponse.append(s);
             con.disconnect(); // close connection
             in.close();
             return jsonResponse.toString();

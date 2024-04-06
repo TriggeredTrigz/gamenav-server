@@ -6,12 +6,13 @@ public class menu implements Runnable {
     private static Scanner sc = new Scanner(System.in);
 
     public static void Menu(){
-        boolean view=false,uptimeView=false;
+        logger.logApp.info("CLI Menu initiated.");
+        boolean logView=false,uptimeView=false;
         while(true){
             clearScreen.cls();
             System.out.println("||\t\t GameNav Server \t\t||");
             System.out.println("||\t\t\t Options \t\t||");
-            if( !view ) System.out.println("1. View game caching");
+            if( !logView ) System.out.println("1. View game caching");
             else System.out.println("1. Stop viewing game caching");
             if( !uptimeView ) System.out.println("2. View uptime");
             else System.out.println("2. Stop viewing uptime");
@@ -24,9 +25,9 @@ public class menu implements Runnable {
             String opt = sc.nextLine();
             switch (opt) {
                 case "1" -> {
-                    view = !view;
-                    logger.loggerViewStatus(logger.logGameCache, view);
-                    if ( !view ) logger.logApp.info("Disabled Game Cache vieweing.");
+                    logView = !logView;
+                    logger.loggerViewStatus(logger.logGameCache, logView);
+                    if ( !logView ) logger.logApp.info("Disabled Game Cache vieweing.");
                     else logger.logApp.info("Enabled Game Cache viewing.");
                 }
                 case "2" -> {
