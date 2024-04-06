@@ -11,8 +11,8 @@ public class logger {
     public static Logger logHTTPreq = Logger.getLogger("HTTP Log");
     private static FileHandler fh_app, fh_gc, fh_http;
 
-    public static void enableView_GameCaching(boolean view){
-        logGameCache.setUseParentHandlers(view);
+    public static void loggerViewStatus(Logger logger, boolean view) {
+        logger.setUseParentHandlers(view);
     }
 
     public static void initLogger() {

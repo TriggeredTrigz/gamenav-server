@@ -9,16 +9,15 @@
 package org.arcreasia.gamenav.steam;
 
 import org.arcreasia.gamenav.mysql.initSQL;
+import org.arcreasia.gamenav.globalMethods.callAPI;
 import org.arcreasia.gamenav.globalMethods.logger;
 import org.arcreasia.gamenav.globalMethods.plsWait;
-import org.arcreasia.gamenav.globalMethods.uptime;
 
 // for more direct approach to parsing from json
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-// import java.io.File;
 import java.sql.ResultSet;
 import java.util.Scanner;
 
@@ -39,8 +38,8 @@ public class parseJSON implements Runnable {
     public static void parseSteamListWCheck ( String json ) throws Exception {
 
         JsonParser listParser = objectMapper.getFactory().createParser( json );
-        while ( listParser.nextToken() != JsonToken.START_ARRAY ) {}
-        while ( listParser.nextToken() == JsonToken.START_OBJECT ) {
+        while( listParser.nextToken() != JsonToken.START_ARRAY ) {}
+        while( listParser.nextToken() == JsonToken.START_OBJECT ) {
             ObjectNode listNode = objectMapper.readTree(listParser);
             int appid = listNode.get("appid").asInt();
             
@@ -51,6 +50,9 @@ public class parseJSON implements Runnable {
                 gameDetails.setLength(0);
                 try {
                     gameDetails.append( callAPI.apiGetResponse( "https://store.steampowered.com/api/appdetails?appids=" + appid ) );
+                    if( gameDetails.substring(0, 5).equals("Error") ) {
+                        logger.logGameCache.info("Connection failed. HTTP Response:" + gameDetails.substring(6, gameDetails.length()));
+                    }
                 } catch (Exception e) { 
                     // e.printStackTrace(); 
                     logger.logGameCache.info(e.toString());
@@ -58,18 +60,17 @@ public class parseJSON implements Runnable {
                     
                 JsonParser gameParser = objectMapper.getFactory().createParser( gameDetails.toString() );
                 ObjectNode gameNode = null,dataNode = null;
-                if ( gameParser.nextToken() == JsonToken.START_OBJECT ) {
+                if( gameParser.nextToken() == JsonToken.START_OBJECT ) {
                     gameNode = objectMapper.readTree(gameParser);
                 }
                 gameParser = objectMapper.getFactory().createParser( gameNode.get(String.valueOf(appid)).toString() );
                 gameNode = objectMapper.readTree(gameParser);
-                if ( gameNode.get("success").asText().equals("false") ) { 
+                if( gameNode.get("success").asText().equals("false") ) { 
                     // if( 0 != initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,type) values(" + appid + ",\"invalid\");") )
-                    // logger.logGameCache.info("Appid:" + appid + "\tname:" + listNode.get("name").asText() + "\t\t\tnot valid.");
                     if( 0!= initSQL.stmt.executeUpdate("update dbnav.steamlist set type=\"invalid\" where appid="+ appid) )
                     logger.logGameCache.info("Appid:" + appid + "\tname:" + listNode.get("name").asText() + "\t\t\tnot valid.");
                     plsWait.plsWaitBro(5000);
-                    continue; 
+                    continue;
                 }
                 else { 
                     JsonParser dataParser = objectMapper.getFactory().createParser( gameNode.get("data").toString() );
@@ -80,7 +81,7 @@ public class parseJSON implements Runnable {
                 StringBuffer name_buffer = new StringBuffer("");
                 for ( int j = 0; j < name.length(); j++){
                     char c = name.charAt(j);
-                    if ( c == '"' ) name_buffer.append("\"");
+                    if( c == '"' ) name_buffer.append("\"");
                     name_buffer.append( String.valueOf( c ) );
                 }
                 name = name_buffer.toString();
@@ -93,7 +94,6 @@ public class parseJSON implements Runnable {
                     default -> { type = "app"; }
                 }
                 // if( 0 != initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,name,type) values(" + appid + ",\"" + name + "\",\"" + type + "\");") )
-                // logger.logGameCache.info("Appid:" + appid + "\t name:" + name + "\t\t\tcached " + type);
                 if( 0!= initSQL.stmt.executeUpdate("update dbnav.steamlist set name=\"" + name + "\",type=\"" + type + "\" where appid="+ appid +";") )
                 logger.logGameCache.info("Appid:" + appid + "\t name:" + name + "\t\t\tcached " + type);
                 plsWait.plsWaitBro(5000);
@@ -110,22 +110,18 @@ public class parseJSON implements Runnable {
         int i=0;
 
         ObjectMapper objectMapper = new ObjectMapper();
-        // System.out.println("/src/main/java/org/arcreasia/gamenav/steam/steamAppList.json");
-        // JsonParser parser = objectMapper.getFactory().createParser( f_json );
         JsonParser parser = objectMapper.getFactory().createParser( json );
-        while ( parser.nextToken() != JsonToken.START_ARRAY ) {}
-        while ( parser.nextToken() == JsonToken.START_OBJECT ) {
+        while( parser.nextToken() != JsonToken.START_ARRAY ) {}
+        while( parser.nextToken() == JsonToken.START_OBJECT ) {
 
             ObjectNode node = objectMapper.readTree(parser);
 
-            // System.out.println(node.get("appid"));
             int appid = node.get("appid").asInt();
-            // System.out.println(node.get("name"));
             String name = node.get("name").asText();
             StringBuffer name_buffer = new StringBuffer("");
             for ( int j = 0; j < name.length(); j++){
                 char c = name.charAt(j);
-                if ( c == '"' ) name_buffer.append("\"");
+                if( c == '"' ) name_buffer.append("\"");
                 name_buffer.append( String.valueOf( c ) );
             }
             name = name_buffer.toString();
@@ -133,8 +129,7 @@ public class parseJSON implements Runnable {
             
             try {
                 ResultSet rs = initSQL.stmt.executeQuery("select * from steamapplist where appid = " + appid );
-                if ( !rs.isBeforeFirst() ) {
-                    // System.out.println("insert into steamAppList(appID,name,banner) values (" + appid + ",\"" + name + "\",\"" + banner + "\") on duplicate key update banner = \"" + banner + "\"");
+                if( !rs.isBeforeFirst() ) {
                     initSQL.stmt.executeUpdate("insert into steamAppList(appID,name,banner) values (" + appid + ",\"" + name + "\",\"" + banner + "\") on duplicate key update banner = \"" + banner + "\"");
                     // System.out.println("Game cached.");
                 } else {
@@ -144,10 +139,10 @@ public class parseJSON implements Runnable {
 
             i++;
 
-            if ( i == 30 ) { plsWait.plsWaitBro(2500); i=0; }
+            if( i == 30 ) { plsWait.plsWaitBro(2500); i=0; }
 
         }
-        if ( parser.nextToken() != JsonToken.START_ARRAY ) {
+        if( parser.nextToken() != JsonToken.START_ARRAY ) {
             throw new IllegalStateException("Expected an Array");
         }
     }
@@ -162,20 +157,23 @@ public class parseJSON implements Runnable {
 
         url.setLength(0);
         return gameDetails;
-
     }
 
     @Override
     public void run() {
-        uptime.initTimer();
-        // File f = new File(initSQL.env.get("steamJsonPath"));
         try {
             logger.logApp.info("Initialiizing steam app list caching method.");
             logger.logApp.info("Getting AppList json from Steam API: https://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json");
             String json = new String(callAPI.apiGetResponse("https://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json"));
-            logger.logApp.info("Json data received.");
-            logger.logApp.info("Initialiizing steam app list caching.");
-            parseSteamListWCheck( json ); 
+            if( json.substring(0, 5).equals("Error") ) {
+                logger.logGameCache.info("Connection to https://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json failed. HTTP Response:" + json.substring(6, json.length()));
+                Thread.interrupted();
+            }
+            else {
+                logger.logApp.info("Json data received.");
+                logger.logApp.info("Initialiizing steam app list caching.");
+                parseSteamListWCheck( json ); 
+            }
         } catch (Exception e) { 
             logger.logApp.info("Stopping steam game cache thread.");
             logger.logApp.info(e.toString()); 

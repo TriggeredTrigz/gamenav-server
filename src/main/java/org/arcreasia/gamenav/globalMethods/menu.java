@@ -25,7 +25,7 @@ public class menu implements Runnable {
             switch (opt) {
                 case "1" -> {
                     view = !view;
-                    logger.enableView_GameCaching(view);
+                    logger.loggerViewStatus(logger.logGameCache, view);
                     if ( !view ) logger.logApp.info("Disabled Game Cache vieweing.");
                     else logger.logApp.info("Enabled Game Cache viewing.");
                 }
