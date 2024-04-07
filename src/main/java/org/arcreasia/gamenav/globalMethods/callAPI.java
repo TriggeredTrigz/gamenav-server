@@ -16,8 +16,6 @@ import java.net.URI;
 import java.net.URL;
 import javax.net.ssl.HttpsURLConnection;
 
-import org.arcreasia.gamenav.steam.dataCaching;
-
 public class callAPI {
 
     /* 
@@ -29,8 +27,6 @@ public class callAPI {
      *                   https://steamcdn-a.akamaihd.net/steam/apps/730/header.jpg
      * 
      */
-
-    dataCaching parseJson = new dataCaching();
 
     public static String apiGetResponse( String requestedURL ) throws Exception {
     
