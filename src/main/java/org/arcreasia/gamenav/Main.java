@@ -5,6 +5,7 @@ import org.arcreasia.gamenav.steam.dataCaching;
 import org.arcreasia.gamenav.globalMethods.menu;
 import org.arcreasia.gamenav.globalMethods.uptime;
 import org.arcreasia.gamenav.globalMethods.callAPI;
+import org.arcreasia.gamenav.globalMethods.jsonFuncs;
 import org.arcreasia.gamenav.globalMethods.logger;
 import org.arcreasia.gamenav.epic.epicWebScraper;
 import org.arcreasia.gamenav.frontend.*;
@@ -35,7 +36,7 @@ public class Main {
 
         /* initialises MySQL connection and database */
         org.arcreasia.gamenav.mysql.initSQL.connectSQL();
-        initSQL.createDB();
+        // initSQL.createDB();
 
         // /* initialize front end for management */
         // Thread thread_frontend = new Thread(frontend);

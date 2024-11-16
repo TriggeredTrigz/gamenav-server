@@ -1,11 +1,11 @@
-CREATE DATABASE IF NOT EXISTS dbnav;
-USE dbnav;
+CREATE DATABASE IF NOT EXISTS gamenav_appdata;
+USE gamenav_appdata;
 
 -- overall
 create table if not exists headlist(
     headid int not null unique auto_increment primary key,
     name varchar(255)
-)
+);
 
 -- steam
 create table if not exists steamList(
@@ -36,30 +36,35 @@ create table if not exists epicList(
 );
 
 -- for all
-create table if not exists supportedOS(
+create table if not exists languages( --
     headid int not null unique,
+    foreign key (headid) references headlist(headid),
+    english boolean
+);
+create table if not exists supportedOS(
+    headid int unique,
     foreign key (headid) references headlist(headid),
     windows boolean, 
     mac boolean, 
     linux boolean
 );
-create table if not exists tags(
-    headid int not null unique,
+create table if not exists tags( --
+    headid int unique,
     foreign key (headid) references headlist(headid),
+    action boolean
 );
-create table if not exists genres(
+create table if not exists genres( --
     headid int not null unique,
     foreign key (headid) references headlist(headid),
+    action boolean
 );
-create table if not exists developers(
-    headid int not null unique,
+create table if not exists developers( --
+    headid int unique,
     foreign key (headid) references headlist(headid),
+    valve boolean
 );
-create table if not exists publishers(
-    headid int not null unique,
+create table if not exists publishers( --
+    headid int unique,
     foreign key (headid) references headlist(headid),
-);
-create table if not exists languages(
-    headid int not null unique,
-    foreign key (headid) references headlist(headid),
+    valve boolean
 );

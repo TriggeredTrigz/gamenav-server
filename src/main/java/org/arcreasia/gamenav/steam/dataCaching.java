@@ -10,6 +10,7 @@ package org.arcreasia.gamenav.steam;
 
 import org.arcreasia.gamenav.mysql.initSQL;
 import org.arcreasia.gamenav.globalMethods.callAPI;
+import org.arcreasia.gamenav.globalMethods.jsonFuncs;
 import org.arcreasia.gamenav.globalMethods.logger;
 import org.arcreasia.gamenav.globalMethods.plsWait;
 
@@ -18,13 +19,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+
 import java.sql.ResultSet;
 
 import java.util.Scanner;
+// import javax.json.Json;
 
 public class dataCaching implements Runnable {
 
     final static Scanner sc = new Scanner(System.in);
+
+    private jsonFuncs jsonFuncs = new jsonFuncs();
 
     static StringBuffer url;
     static StringBuffer gameDetails = new StringBuffer("");
@@ -95,10 +100,60 @@ public class dataCaching implements Runnable {
                 plsWait.plsWaitBro(dataCaching.class,5000);
             } catch (java.sql.SQLIntegrityConstraintViolationException e) {
                 logger.logGameCache.info("Appid:" + appid + "\t name:" + listNode.get("name").asText() + "\t\t\talready cached.");
-                plsWait.plsWaitBro(dataCaching.class,125);
+                plsWait.plsWaitBro(dataCaching.class,64);
             } catch (Exception e) { 
                 logger.logGameCache.info(e.toString());
             } 
+        }
+    }
+
+    public void parseSteamList (String json) throws Exception {
+        
+        JsonParser listParser = objectMapper.getFactory().createParser(json);
+        while( listParser.nextToken() != JsonToken.START_ARRAY ) {}
+        while( listParser.nextToken() == JsonToken.START_OBJECT ) {
+            ObjectNode listNode = objectMapper.readTree(listParser);
+            int appid = listNode.get("appid").asInt();
+
+            try{
+                // pre check for already added records
+                initSQL.stmt.executeUpdate("insert into dbnav.steamlist(appid,type) values(" + appid + ",\"ph\");");
+                gameDetails.setLength(0);
+                try{
+                    gameDetails.append( callAPI.apiGetResponse( "https://store.steampowered.com/api/appdetails?appids=" + appid ) );
+                    if( gameDetails.substring(0, 3).equals("Err") ) {
+                        logger.logGameCache.info("Connection failed. HTTP Response:" + gameDetails.substring(6, gameDetails.length()) );
+                    }
+                } catch (Exception e) {
+                    logger.logGameCache.info(e.toString());
+                }
+
+                if( jsonFuncs.nodeData(gameDetails.toString(), "success").equals("false") ) {
+                    if( 0!= initSQL.stmt.executeUpdate("update dbnav.steamlist set type=\"invalid\" where appid="+ appid) )
+                    logger.logGameCache.info("Appid:" + appid + "\tname:" + listNode.get("name").asText() + "\t\t\tnot valid.");
+                    plsWait.plsWaitBro(dataCaching.class,5000);
+                    continue;
+                } 
+                else {
+                    String name = jsonFuncs.nodeData(gameDetails.toString(), "name");
+                    StringBuffer name_buffer = new StringBuffer("");
+                    for ( int j = 0; j < name.length(); j++){
+                        char c = name.charAt(j);
+                        if( c == '"' ) name_buffer.append("\"");
+                        name_buffer.append( String.valueOf( c ) );
+                    }
+                    name = name_buffer.toString();
+
+                    String type = jsonFuncs.nodeData(gameDetails.toString(), "type");
+                    
+                }
+
+            } catch (java.sql.SQLIntegrityConstraintViolationException SQLError) {
+                logger.logGameCache.info("Appid:" + appid + "\t name" + listNode.get("name").asText() + "\t\t\t already cached.");
+                plsWait.plsWaitBro(dataCaching.class, 64);
+            } catch (Exception e) {
+                logger.logGameCache.info(e.toString());
+            }
         }
     }
 
@@ -169,6 +224,7 @@ public class dataCaching implements Runnable {
                 logger.logApp.info("Json data received.");
                 logger.logApp.info("Initialiizing steam app list caching.");
                 parseSteamListWCheck( json ); 
+                // parseSteamList(json);
             }
         } catch (Exception e) { 
             logger.logApp.info("Stopping steam game cache thread.");
